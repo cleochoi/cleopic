@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>클레오픽 CleoPIc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: 한 장짜리 시험지 — 상단 이름표, 문항 탭, 문항 카드(듣기 → 녹음 → 확인), 하단 제출 패널 */
+:root{
+  --bg:#eef1f0; --surface:#ffffff; --ink:#18242a; --muted:#5b6a6f; --line:#d3dbda;
+  --accent:#1f5f6b; --accent-ink:#ffffff; --soft:#e1ebe9;
+  --rec:#d23f38; --ok:#2e7a4d;
+  --display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
+  --body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#11191c;--surface:#19252a;--ink:#e5eeed;--muted:#97a7aa;--line:#2b3a3f;
+    --accent:#72bcc7;--accent-ink:#0c1a1d;--soft:#1f323a;--rec:#ff6a61;--ok:#6fce95;color-scheme:dark}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;
+  padding-inline:16px;padding-block:calc(env(safe-area-inset-top,0px) + 20px) calc(env(safe-area-inset-bottom,0px) + 40px)}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-direction:column;gap:4px}
+.brand{font-family:var(--display);font-size:2.4rem;line-height:1.1;margin:0;letter-spacing:.01em}
+.brand small{font-family:var(--mono);font-size:.8rem;color:var(--accent);letter-spacing:.12em;margin-left:8px;vertical-align:middle}
+.sub{color:var(--muted);margin:0;font-size:.95rem}
+.name{display:flex;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.name label{font-weight:700;white-space:nowrap;font-size:.9rem}
+.name input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;outline:none}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.tab{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 0;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.tab b{font-family:var(--mono);font-size:.95rem}
+.tab span{font-size:.72rem;color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tab.done{background:var(--soft)}
+.tab.done span{color:var(--ok);font-weight:700}
+.tab:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:18px}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chip{font-size:.75rem;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--accent)}
+.qnum{font-family:var(--mono);color:var(--muted);font-size:.85rem}
+.step{display:flex;flex-direction:column;gap:10px}
+.step h3{margin:0;font-size:.8rem;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button.btn{font:inherit;font-weight:700;border-radius:10px;padding:11px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+button.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.btn.rec{background:var(--rec);color:#fff;border-color:var(--rec)}
+button.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hint{font-size:.85rem;color:var(--muted)}
+.script{border-left:3px solid var(--accent);background:var(--soft);padding:10px 14px;border-radius:0 10px 10px 0;font-size:1rem}
+.recbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.timer{font-family:var(--mono);font-size:1.4rem;font-variant-numeric:tabular-nums}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--rec);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.transcript{min-height:96px;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;font-size:1rem;
+  white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text}
+.transcript .interim{color:var(--muted)}
+.transcript:empty::before{content:attr(data-empty);color:var(--muted);font-size:.9rem}
+audio{width:100%}
+.msg{font-size:.9rem;color:var(--rec)}
+.submit{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.submit h2{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
+.progress{font-family:var(--mono);font-size:.9rem;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:10px 16px;border-radius:10px;font-size:.9rem;max-width:calc(100% - 32px)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="brand">클레오픽<small>CleoPIc</small></h1>
+    <p class="sub">묘사 · 루틴 5문항 녹음 숙제 — 질문을 듣고 영어로 답변하세요.</p>
+  </header>
+
+  <div class="name">
+    <label for="studentName">이름</label>
+    <input id="studentName" autocomplete="name" placeholder="이름을 입력하세요">
+  </div>
+
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+
+  <section class="card" id="card"></section>
+
+  <section class="submit">
+    <h2>숙제 제출</h2>
+    <div class="progress" id="progress"></div>
+    <div class="row">
+      <button class="btn primary" id="submitBtn">제출하기</button>
+      <button class="btn" id="copyAllBtn">제출 내용 복사</button>
+      <button class="btn" id="saveAudioBtn">녹음 파일 저장</button>
+    </div>
+    <p class="hint">제출하기를 누르면 카카오톡 등으로 녹음 파일과 스크립트를 바로 보낼 수 있어요. 공유가 안 되는 기기에서는 ‘제출 내용 복사’ 후 붙여넣고, 녹음 파일도 함께 보내주세요.</p>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const QUESTIONS = [
+  {type:"묘사", text:"I would like to know about your house. What does it look like? How many rooms does it have, and which room do you like the most? Please describe it in as much detail as possible."},
+  {type:"루틴", text:"Tell me about your typical weekday. What do you usually do from the moment you wake up until you go to bed? Please tell me everything in detail."},
+  {type:"묘사", text:"Describe a park you often go to. Where is it, what does it look like, and what kinds of things do people usually do there?"},
+  {type:"루틴", text:"What do you usually do on weekends? Describe your weekend routine from Saturday morning to Sunday night."},
+  {type:"묘사", text:"Tell me about your favorite café. Where is it located, what does it look like inside, and why do you like going there?"}
+];
+const MAX_REPLAYS = 2;       // 첫 듣기 이후 다시 듣기 가능 횟수
+const MAX_SECONDS = 180;     // 녹음 최대 3분
+
+const state = QUESTIONS.map(() => ({plays:0, scriptShown:false, blob:null, url:null, mime:"", transcript:"", seconds:0, done:false}));
+let cur = 0, recording = false, recIndex = -1, speaking = false;
+let stream = null, recorder = null, chunks = [], recog = null, finalText = "", tick = null, startAt = 0;
+
+const $ = id => document.getElementById(id);
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+/* ---------- 미국식 영어 음성 ---------- */
+let usVoice = null;
+function pickVoice(){
+  const vs = speechSynthesis.getVoices();
+  const prefer = ["Google US English","Samantha","Microsoft Aria","Microsoft Jenny","Alex","Aaron"];
+  usVoice = prefer.map(n => vs.find(v => v.name.includes(n))).find(Boolean)
+         || vs.find(v => v.lang === "en-US") || vs.find(v => v.lang && v.lang.startsWith("en-US")) || null;
+}
+if ("speechSynthesis" in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+
+function speak(text){
+  if (!("speechSynthesis" in window)){ toast("이 브라우저는 음성 재생을 지원하지 않아요. 크롬으로 열어주세요."); return false; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; if (usVoice) u.voice = usVoice; u.rate = 0.92;
+  u.onend = u.onerror = () => { speaking = false; render(); };
+  speaking = true;
+  speechSynthesis.speak(u);
+  return true;
+}
+
+function onListen(){
+  const s = state[cur];
+  if (speaking || recording) return;
+  if (s.plays > MAX_REPLAYS){ s.scriptShown = true; render(); return; }  // 세 번째 다시 듣기 → 스크립트 공개
+  if (speak(QUESTIONS[cur].text)) { s.plays++; render(); }
+}
+
+/* ---------- 녹음 + 실시간 스크립트 ---------- */
+function pickMime(){
+  if (!window.MediaRecorder) return "";
+  return ["audio/webm;codecs=opus","audio/webm","audio/mp4","audio/aac"].find(t => MediaRecorder.isTypeSupported(t)) || "";
+}
+
+async function startRec(){
+  if (recording || speaking) return;
+  if (!navigator.mediaDevices || !window.MediaRecorder){ toast("이 브라우저는 녹음을 지원하지 않아요. 크롬이나 사파리로 열어주세요."); return; }
+  try { stream = await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch(e){ toast("마이크 권한을 허용해야 녹음할 수 있어요."); return; }
+  const s = state[cur];
+  if (s.url) URL.revokeObjectURL(s.url);
+  Object.assign(s, {blob:null, url:null, transcript:"", seconds:0, done:false});
+  recIndex = cur; chunks = []; finalText = "";
+  const mime = pickMime();
+  recorder = new MediaRecorder(stream, mime ? {mimeType:mime} : undefined);
+  recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    const t = state[recIndex];
+    t.mime = recorder.mimeType || mime || "audio/webm";
+    t.blob = new Blob(chunks, {type:t.mime});
+    t.url = URL.createObjectURL(t.blob);
+    stream.getTracks().forEach(tr => tr.stop());
+    render();
+  };
+  recorder.start(1000);
+  recording = true;
+  startAt = Date.now();
+  tick = setInterval(() => {
+    const sec = Math.floor((Date.now() - startAt) / 1000);
+    state[recIndex].seconds = sec;
+    const el = $("timer"); if (el) el.textContent = fmt(sec);
+    if (sec >= MAX_SECONDS) stopRec();
+  }, 250);
+  startRecognition();
+  render();
+}
+
+function startRecognition(){
+  if (!SR) return;
+  recog = new SR();
+  recog.lang = "en-US"; recog.continuous = true; recog.interimResults = true;
+  recog.onresult = e => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++){
+      const r = e.results[i];
+      if (r.isFinal) finalText += r[0].transcript.trim() + " ";
+      else interim += r[0].transcript;
+    }
+    state[recIndex].transcript = finalText.trim();
+    paintTranscript(interim);
+  };
+  recog.onend = () => { if (recording) { try { recog.start(); } catch(_){} } };  // 침묵으로 끊기면 다시 이어 듣기
+  recog.onerror = e => { if (e.error === "not-allowed" || e.error === "service-not-allowed") toast("자동 스크립트 권한이 막혀 있어요. 녹음은 계속 저장돼요."); };
+  try { recog.start(); } catch(_){}
+}
+
+function stopRec(){
+  if (!recording) return;
+  recording = false;
+  clearInterval(tick);
+  try { recorder.stop(); } catch(_){}
+  try { recog && recog.stop(); } catch(_){}
+  render();
+}
+
+function reRecord(){ const s = state[cur]; s.done = false; startRec(); }
+function confirmAnswer(){
+  const s = state[cur];
+  if (!s.blob) return;
+  s.done = true;
+  const next = state.findIndex(x => !x.done);
+  if (next !== -1) cur = next;
+  render();
+  toast(next === -1 ? "5문항 모두 완료! 아래에서 제출하세요." : "저장됐어요. Q" + (next + 1) + "로 넘어갑니다.");
+}
+
+/* ---------- 화면 ---------- */
+function fmt(sec){ return Math.floor(sec/60) + ":" + String(sec%60).padStart(2,"0"); }
+
+function paintTranscript(interim){
+  const box = $("transcript"); if (!box) return;
+  box.textContent = state[recIndex >= 0 && recording ? recIndex : cur].transcript;
+  if (interim){ const sp = document.createElement("span"); sp.className = "interim"; sp.textContent = (box.textContent ? " " : "") + interim; box.appendChild(sp); }
+}
+
+function renderTabs(){
+  const nav = $("tabs"); nav.innerHTML = "";
+  QUESTIONS.forEach((q, i) => {
+    const b = document.createElement("button");
+    b.className = "tab" + (state[i].done ? " done" : "");
+    b.setAttribute("role","tab"); b.setAttribute("aria-selected", i === cur);
+    b.disabled = recording;
+    b.innerHTML = `<b>Q${i+1}</b><span>${state[i].done ? "완료" : q.type}</span>`;
+    b.onclick = () => { if (!recording){ speechSynthesis && speechSynthesis.cancel(); speaking = false; cur = i; render(); } };
+    nav.appendChild(b);
+  });
+}
+
+function renderCard(){
+  const q = QUESTIONS[cur], s = state[cur], card = $("card");
+  const left = Math.max(0, MAX_REPLAYS - Math.max(0, s.plays - 1));
+  let listenLabel, listenHint;
+  if (s.plays === 0){ listenLabel = "▶ 질문 듣기"; listenHint = "실제 시험처럼 질문은 소리로만 나와요."; }
+  else if (s.plays <= MAX_REPLAYS){ listenLabel = `↻ 다시 듣기 (${left}회 남음)`; listenHint = `다시 듣기는 ${MAX_REPLAYS}번까지 가능해요.`; }
+  else { listenLabel = s.scriptShown ? "스크립트 표시됨" : "스크립트 보기"; listenHint = "다시 듣기를 모두 사용했어요. 질문을 글로 확인하세요."; }
+  const hasAnswer = !!s.blob && !recording;
+  const isRecHere = recording && recIndex === cur;
+
+  card.innerHTML = `
+    <div class="qhead"><span class="chip">${q.type}</span><span class="qnum">QUESTION ${cur+1} / ${QUESTIONS.length}</span></div>
+
+    <div class="step">
+      <h3>1. 질문 듣기 · 미국식 발음</h3>
+      <div class="row">
+        <button class="btn primary" id="listenBtn" ${speaking || recording || s.scriptShown ? "disabled" : ""}>${speaking ? "재생 중…" : listenLabel}</button>
+      </div>
+      <p class="hint">${listenHint}</p>
+      ${s.scriptShown ? `<div class="script" lang="en">${q.text}</div>` : ""}
+    </div>
+
+    <div class="step">
+      <h3>2. 영어로 답변 녹음</h3>
+      <div class="recbar">
+        ${isRecHere
+          ? `<button class="btn rec" id="stopBtn">■ 녹음 끝내기</button><span class="dot" aria-hidden="true"></span><span class="timer" id="timer">${fmt(s.seconds)}</span>`
+          : hasAnswer ? `<span class="timer">${fmt(s.seconds)}</span><span class="hint">녹음 완료</span>`
+          : `<button class="btn rec" id="recBtn" ${speaking || recording ? "disabled" : ""}>● 녹음 시작</button><span class="hint">최대 ${MAX_SECONDS/60}분</span>`}
+      </div>
+      <div class="transcript" id="transcript" lang="en" data-empty="${SR ? "말하는 내용이 여기에 영어 스크립트로 바로 나타나요." : "이 브라우저는 자동 스크립트를 지원하지 않아요. 크롬으로 열면 스크립트가 함께 만들어져요."}"></div>
+      <div class="row"><button class="btn" id="copyTBtn" ${s.transcript ? "" : "disabled"}>스크립트 복사</button></div>
+    </div>
+
+    ${hasAnswer ? `
+    <div class="step">
+      <h3>3. 들어보고 결정하기</h3>
+      <audio controls src="${s.url}"></audio>
+      <div class="row">
+        <button class="btn" id="reBtn">다시 녹음</button>
+        <button class="btn primary" id="okBtn" ${s.done ? "disabled" : ""}>${s.done ? "✓ 제출 목록에 담김" : "이 답변으로 제출"}</button>
+      </div>
+    </div>` : ""}
+  `;
+  paintTranscript("");
+  const on = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+  on("listenBtn", onListen); on("recBtn", startRec); on("stopBtn", stopRec);
+  on("reBtn", reRecord); on("okBtn", confirmAnswer);
+  on("copyTBtn", () => copyText(state[cur].transcript, "스크립트를 복사했어요."));
+}
+
+function renderSubmit(){
+  const n = state.filter(s => s.done).length;
+  $("progress").textContent = `제출 준비 ${n} / ${QUESTIONS.length}문항`;
+  ["submitBtn","copyAllBtn","saveAudioBtn"].forEach(id => $(id).disabled = n === 0 || recording);
+}
+
+function render(){ renderTabs(); renderCard(); renderSubmit(); }
+
+/* ---------- 제출 ---------- */
+function studentName(){ return $("studentName").value.trim(); }
+function ext(mime){ return mime.includes("mp4") || mime.includes("aac") ? "m4a" : "webm"; }
+function fileName(i){ return `클레오픽_${studentName() || "학생"}_Q${i+1}.${ext(state[i].mime)}`; }
+
+function buildText(){
+  const d = new Date();
+  const stamp = `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  const lines = [`[클레오픽 숙제 제출]`, `이름: ${studentName()}`, `제출 시각: ${stamp}`, ``];
+  state.forEach((s, i) => {
+    if (!s.done) return;
+    lines.push(`■ Q${i+1} (${QUESTIONS[i].type})`, QUESTIONS[i].text,
+      `- 녹음: ${fmt(s.seconds)} (${fileName(i)})`, `- 답변 스크립트: ${s.transcript || "(자동 스크립트 없음)"}`, ``);
+  });
+  return lines.join("\n");
+}
+
+function needName(){
+  if (studentName()) return false;
+  toast("제출 전에 이름을 입력해 주세요."); $("studentName").focus(); return true;
+}
+
+function audioFiles(){
+  return state.map((s, i) => s.done && s.blob ? new File([s.blob], fileName(i), {type:s.mime}) : null).filter(Boolean);
+}
+
+async function submitAll(){
+  if (needName()) return;
+  const text = buildText(), files = audioFiles();
+  if (navigator.canShare && navigator.canShare({files, text})){
+    try { await navigator.share({title:"클레오픽 숙제", text, files}); toast("공유 창에서 선생님께 보내주세요."); return; }
+    catch(e){ if (e.name === "AbortError") return; }
+  }
+  await copyText(text, "제출 내용을 복사했어요. 붙여넣고 녹음 파일도 함께 보내주세요.");
+  saveAudio();
+}
+
+function saveAudio(){
+  if (needName()) return;
+  audioFiles().forEach((f, k) => setTimeout(() => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(f); a.download = f.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }, k * 400));
+}
+
+async function copyText(text, okMsg){
+  try { await navigator.clipboard.writeText(text); toast(okMsg); }
+  catch(_){
+    const ta = document.createElement("textarea"); ta.value = text; ta.readOnly = true;
+    ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast(okMsg); } catch(__){ toast("복사가 안 돼요. 길게 눌러 직접 선택해 주세요."); }
+    ta.remove();
+  }
+}
+
+let toastTimer;
+function toast(m){ const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2800); }
+
+$("submitBtn").onclick = submitAll;
+$("copyAllBtn").onclick = () => { if (!needName()) copyText(buildText(), "제출 내용을 복사했어요."); };
+$("saveAudioBtn").onclick = saveAudio;
+try { $("studentName").value = localStorage.getItem("cleopic_name") || ""; } catch(_){}
+$("studentName").addEventListener("input", e => { try { localStorage.setItem("cleopic_name", e.target.value); } catch(_){} });
+render();
+</script>
+</body>
+</html>
